@@ -1,26 +1,48 @@
 import socket
 import threading
+import time
 
 HEADER = 64
 FORMAT = 'utf-8'
-PORT = 5052 #higher value should make current use of this port unlikely
-SERVER = socket.gethostbyname(socket.gethostname()) #this device ip
-ADDR = (SERVER, PORT)
-DISCONNECT_MESSAGE = "ENDING SESSION"
+PORT1 = 5052 #higher value should make current use of this port unlikely
+THISHOST = socket.gethostbyname(socket.gethostname()) #this device ip
+ADDR1 = (THISHOST, PORT1)
+
+SERVER_MESSAGE = "\nHello \nThis is server speaking \nOver \n"
 
 # AF_INET is for IPv4 address family.
 # SOCK_STREAM is for TCP connection.
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # assigns socket location with any local ip address
-serversocket.bind(ADDR)
+serversocket.bind(ADDR1)
+
+def send(connection, message):
+
+    # user input is put into utf-8
+    message = message.encode(FORMAT)
+
+    # take payload length to use as header for initial receive by server so it can prepare for full payload
+    message_length = len(message)
+
+    # put payload into utf-8
+    length_to_send = str(message_length).encode(FORMAT)
+
+    # blank spaces added to end of data such that header is of defined size.
+    length_to_send += b' ' * (HEADER - len(length_to_send))
+
+    connection.send(length_to_send)
+    connection.send(message)
+
+    time.sleep(1)
+
+
 
 # for each thread instance this code runs, thus clients do not hold up eachother
-def handle_client(connection, address):
-    print(f"{address} connection began")
+def receive(connection, address):
+    print(f"@ ({address}) CONNECTION FOUND! \n")
 
-    connected = True
-    while connected:
+    while True:
 
         # as we need to know defined no. of bytes for message we use header to provide
         # that info first.
@@ -31,31 +53,37 @@ def handle_client(connection, address):
             message_len = int(message_len)
 
             # using now known payload length from header take in message content
-            message = connection.recv(message_len).decode(FORMAT)
+            receive_message = connection.recv(message_len).decode(FORMAT)
 
-            # waiting for client to command ending socket on server side
-            if message == DISCONNECT_MESSAGE:
-                connected = False
-            print(f"{address} says: {message}")
+            print(f"{receive_message}")
 
-    # kills socket
-    connection.close()
-    print(f"{address} closed connection")
+            # this session is open forever
 
 def start():
     serversocket.listen() #ready for connection
     while True:
 
         # wait for connection to provide us socket object and its address
-        print("listening...")
+        print("listening... Also you can type below:")
+
         connection, address = serversocket.accept() 
 
-        print("CONNECTION FOUND")
+        break
 
-        # thread object made to run handle_client 
-        thread = threading.Thread(target=handle_client, args=(connection, address))
-        thread.start()
+    # thread object made to run to receive
+    thread_rx = threading.Thread(target=receive, args=(connection, address))
+    thread_rx.start()
+
+    while True:
+
+        thread_tx = threading.Thread(target=send, args=(connection, SERVER_MESSAGE))
+        thread_tx.start()
+
+        time.sleep(1)
+
+
+
 
 # main
-print(f" --- {SERVER} server began --- ")
+print(f" --- ({THISHOST}) SERVER BEGAN --- \n")
 start()
