@@ -2,7 +2,7 @@ import socket
 import threading
 import time
 
-HEADER = 64
+HEADER = 1024
 FORMAT = 'utf-8'
 PORT1 = 5052 #higher value should make current use of this port unlikely
 THISHOST = socket.gethostbyname(socket.gethostname()) #this device ip
@@ -34,8 +34,6 @@ def send(connection, message):
     connection.send(length_to_send)
     connection.send(message)
 
-    time.sleep(1)
-
 
 
 # for each thread instance this code runs, thus clients do not hold up eachother
@@ -55,7 +53,7 @@ def receive(connection, address):
             # using now known payload length from header take in message content
             receive_message = connection.recv(message_len).decode(FORMAT)
 
-            print(f"{receive_message}")
+            print(f"\r{receive_message}\nEnter message: ", end="")
 
             # this session is open forever
 
@@ -75,11 +73,10 @@ def start():
     thread_rx.start()
 
     while True:
+        msg = input("Enter message: ")
 
-        thread_tx = threading.Thread(target=send, args=(connection, SERVER_MESSAGE))
+        thread_tx = threading.Thread(target=send, args=(connection,"Received: " + msg))
         thread_tx.start()
-
-        time.sleep(1)
 
 
 

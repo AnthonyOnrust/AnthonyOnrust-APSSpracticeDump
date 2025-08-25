@@ -2,7 +2,7 @@ import socket
 import threading
 import time
 
-HEADER = 64
+HEADER = 1024
 FORMAT = 'utf-8'
 PORT1 = 5052
 THISHOST = socket.gethostbyname(socket.gethostname()) #this device ip
@@ -49,7 +49,7 @@ def receive():
             # using now known payload length from header take in message content
             receive_message = clientsocket.recv(message_len).decode(FORMAT)
 
-            print(f"{receive_message}")
+            print(f"\r{receive_message}\nEnter message: ", end="")
 
 
 def start():
@@ -61,11 +61,10 @@ def start():
     thread_rx.start()
 
     while True:
+        msg = input("Enter message: ")
 
-        thread_tx = threading.Thread(target=send, args=(MESSAGE,))
+        thread_tx = threading.Thread(target=send, args=("Received: " + msg,))
         thread_tx.start()
-
-        time.sleep(1)
 
 
 # main
