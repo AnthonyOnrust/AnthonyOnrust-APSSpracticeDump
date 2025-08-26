@@ -1,6 +1,7 @@
 import socket
 import threading
 from pynput import keyboard
+import time
 
 HEADER = 64
 FORMAT = 'utf-8'
@@ -8,7 +9,6 @@ PORT1 = 5052 #higher value should make current use of this port unlikely
 THISHOST = socket.gethostbyname(socket.gethostname()) #this device ip
 ADDR1 = (THISHOST, PORT1)
 
-server_message = ""
 
 # AF_INET is for IPv4 address family.
 # SOCK_STREAM is for TCP connection.
@@ -23,6 +23,7 @@ def on_press(key):
     global server_message
     if (str(key).replace("'", "") == "Key.enter"):
         server_message = str(server_message) + "\n"
+        time.sleep(0.2)
         print(server_message, end="\r")
         server_message = "Type here:"
         print(server_message, end="\r")
@@ -71,6 +72,7 @@ def receive(connection, address):
         # as we need to know defined no. of bytes for message we use header to provide
         # that info first.
         message_len = connection.recv(HEADER).decode(FORMAT)
+        print(f"message length: {message_len}.")
 
         # ensure header is legit before taking paylaod
         if message_len:
@@ -102,9 +104,10 @@ def start():
     listener.start()
 
     while True:
-
-        thread_tx = threading.Thread(target=send, args=(server_message,))
+        thread_tx = threading.Thread(target=send, args=(connection, server_message))
         thread_tx.start()
+
+        time.sleep(0.2)
 
 
 # main
