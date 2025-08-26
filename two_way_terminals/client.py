@@ -2,7 +2,7 @@ import socket
 import threading
 import time
 
-HEADER = 1024
+HEADER = 64
 FORMAT = 'utf-8'
 PORT1 = 5052
 THISHOST = socket.gethostbyname(socket.gethostname()) #this device ip
@@ -41,13 +41,16 @@ def receive():
         # as we need to know defined no. of bytes for message we use header to provide
         # that info first.
         message_len = clientsocket.recv(HEADER).decode(FORMAT)
+        #print(f"length received: {message_len}.")
 
         # ensure header is legit before taking paylaod
         if message_len:
             message_len = int(message_len)
+            print(f"length received int: {message_len}.")
 
             # using now known payload length from header take in message content
             receive_message = clientsocket.recv(message_len).decode(FORMAT)
+            print(f"payload received: {receive_message}.")
 
             print(f"\r{receive_message}\nEnter message: ", end="")
 

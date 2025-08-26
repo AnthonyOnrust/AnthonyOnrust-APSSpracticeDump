@@ -1,14 +1,14 @@
 import socket
 import threading
-import time
+from pynput import keyboard
 
-HEADER = 1024
+HEADER = 64
 FORMAT = 'utf-8'
 PORT1 = 5052 #higher value should make current use of this port unlikely
 THISHOST = socket.gethostbyname(socket.gethostname()) #this device ip
 ADDR1 = (THISHOST, PORT1)
 
-SERVER_MESSAGE = "\nHello \nThis is server speaking \nOver \n"
+server_message = ""
 
 # AF_INET is for IPv4 address family.
 # SOCK_STREAM is for TCP connection.
@@ -17,19 +17,45 @@ serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # assigns socket location with any local ip address
 serversocket.bind(ADDR1)
 
+server_message = str("Type here:")
+
+def on_press(key):
+    global server_message
+    if (str(key).replace("'", "") == "Key.enter"):
+        server_message = str(server_message) + "\n"
+        print(server_message, end="\r")
+        server_message = "Type here:"
+        print(server_message, end="\r")
+
+    elif (str(key).replace("'", "") == "Key.space"):
+        server_message = str(server_message) + " "
+        print(server_message, end="\r")
+
+    elif (str(key).replace("'", "")).isalnum():
+        server_message = str(server_message) + str(key).replace("'", "")
+        print(server_message, end="\r")
+    pass
+
+def on_release():
+    pass
+
 def send(connection, message):
 
     # user input is put into utf-8
     message = message.encode(FORMAT)
+    #print(f"utf-8 message: {message}.")
 
     # take payload length to use as header for initial receive by server so it can prepare for full payload
     message_length = len(message)
+    #print(f"message length int: {message_length}.")
 
     # put payload into utf-8
     length_to_send = str(message_length).encode(FORMAT)
+    #print(f"message length str: {length_to_send}.")
 
     # blank spaces added to end of data such that header is of defined size.
     length_to_send += b' ' * (HEADER - len(length_to_send))
+    #print(f"message length ready: {length_to_send}.")
 
     connection.send(length_to_send)
     connection.send(message)
@@ -62,7 +88,7 @@ def start():
     while True:
 
         # wait for connection to provide us socket object and its address
-        print("listening... Also you can type below:")
+        print("listening... Only type in alphanumeric:")
 
         connection, address = serversocket.accept() 
 
@@ -72,13 +98,13 @@ def start():
     thread_rx = threading.Thread(target=receive, args=(connection, address))
     thread_rx.start()
 
+    listener = keyboard.Listener(on_press=on_press, on_release=on_release)
+    listener.start()
+
     while True:
-        msg = input("Enter message: ")
 
-        thread_tx = threading.Thread(target=send, args=(connection,"Received: " + msg))
+        thread_tx = threading.Thread(target=send, args=(server_message,))
         thread_tx.start()
-
-
 
 
 # main
