@@ -3,11 +3,16 @@ import threading
 from pynput import keyboard
 import time
 
+import msvcrt
+import ctypes
+
+
 HEADER = 64
 FORMAT = 'utf-8'
 PORT1 = 5052 #higher value should make current use of this port unlikely
 THISHOST = socket.gethostbyname(socket.gethostname()) #this device ip
 ADDR1 = (THISHOST, PORT1)
+
 
 
 # AF_INET is for IPv4 address family.
@@ -17,30 +22,19 @@ serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # assigns socket location with any local ip address
 serversocket.bind(ADDR1)
 
-server_message = str("Type here:")
+server_message = str("Type here: ")
+print(server_message)
 
-def on_press(key):
-    global server_message
-    if (str(key).replace("'", "") == "Key.enter"):
-        server_message = str(server_message) + "\n"
-        time.sleep(0.2)
-        print(server_message, end="\r")
-        server_message = "Type here:"
-        print(server_message, end="\r")
+console_handle = ctypes.windll.kernel32.GetStdHandle(-10)
+ctypes.windll.kernel32.SetConsoleMode(console_handle, 0)
 
-    elif (str(key).replace("'", "") == "Key.space"):
-        server_message = str(server_message) + " "
-        print(server_message, end="\r")
+#server_message = msvcrt.getch().decode()
 
-    elif (str(key).replace("'", "")).isalnum():
-        server_message = str(server_message) + str(key).replace("'", "")
-        print(server_message, end="\r")
-    pass
 
-def on_release():
-    pass
 
 def send(connection, message):
+
+    print(f"\r{message}", end="")
 
     # user input is put into utf-8
     message = message.encode(FORMAT)
@@ -86,6 +80,7 @@ def receive(connection, address):
             # this session is open forever
 
 def start():
+    global server_message
     serversocket.listen() #ready for connection
     while True:
 
@@ -100,15 +95,27 @@ def start():
     thread_rx = threading.Thread(target=receive, args=(connection, address))
     thread_rx.start()
 
-    listener = keyboard.Listener(on_press=on_press, on_release=on_release)
-    listener.start()
-
     while True:
+        new_char = msvcrt.getch()
+        if (new_char == b'\r'):
+            server_message.replace("Type here", "Me")
+            print(f"\r{server_message}", end="")
+            print(f"\n")
+            server_message = str("Type here: ")
+        # backspaces remove characters
+        elif (new_char == b'\x08'):
+            if (server_message != "Type here: "):
+                server_message = server_message[:-1]
+                print(f"\r{server_message}" + " ", end="")
+            else:
+                print(f"\r{server_message}", end="")
+        
+
+        else:
+            server_message = server_message + new_char.decode()
+
         thread_tx = threading.Thread(target=send, args=(connection, server_message))
         thread_tx.start()
-
-        time.sleep(0.2)
-
 
 # main
 print(f" --- ({THISHOST}) SERVER BEGAN --- \n")
