@@ -73,7 +73,10 @@ def receive(connection, address):
             # using now known payload length from header take in message content
             receive_message = connection.recv(message_len).decode(FORMAT)
 
+            clear_message = " " * len(server_message)
+            print(f"\r{str(clear_message)}", end="")
             print(f"\r{receive_message}", end="")
+            print(f"\r{server_message}", end ="")
 
             # this session is open forever
 
@@ -100,7 +103,7 @@ def start():
         if (new_char == b'\r'):
             server_message.replace("Server: ", "Me")
             print(f"\r{server_message}", end="")
-            thread_tx = threading.Thread(target=send, args=(connection, "\n"))
+            thread_tx = threading.Thread(target=send, args=(connection, server_message + "\n"))
             thread_tx.start()
             server_message = str("Server: ")
         # backspaces remove characters
@@ -114,8 +117,8 @@ def start():
         else:
             server_message = server_message + new_char.decode()
 
-        thread_tx = threading.Thread(target=send, args=(connection, server_message))
-        thread_tx.start()
+        print(f"\r{server_message}", end="")
+
 
 # main
 print(f" --- ({THISHOST}) SERVER BEGAN --- \n")

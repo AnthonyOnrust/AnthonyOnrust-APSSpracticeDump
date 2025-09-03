@@ -60,7 +60,10 @@ def receive():
             receive_message = clientsocket.recv(message_len).decode(FORMAT)
             #print(f"payload received: {receive_message}.")
 
+            clear_message = " " * len(client_message)
+            print(f"\r{str(clear_message)}", end="")
             print(f"\r{receive_message}", end ="")
+            print(f"\r{client_message}", end ="")
             #print(f"\r{receive_message}\nEnter message: ", end="")
 
 
@@ -80,7 +83,7 @@ def start():
         if (new_char == b'\r'):
             client_message.replace("Client: ", "Me")
             print(f"\r{client_message}", end="")
-            thread_tx = threading.Thread(target=send, args=("\n",))
+            thread_tx = threading.Thread(target=send, args=(client_message + "\n",))
             thread_tx.start()
             client_message = str("Client: ")
         # backspaces remove characters
@@ -94,9 +97,7 @@ def start():
         else:
             client_message = client_message + new_char.decode()
 
-        thread_tx = threading.Thread(target=send, args=(client_message,))
-        thread_tx.start()
-
+        print(f"\r{client_message}", end="")
 
 # main
 print(f" --- ({THISHOST}) CLIENT BEGAN --- \n")
