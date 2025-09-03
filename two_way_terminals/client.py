@@ -18,15 +18,15 @@ clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # assigns socket location with local ip address and selected port
 clientsocket.connect(ADDR1)
 
-client_message = str("Client: ")
-print(client_message)
+client_message = str("")
+print(f"Client: {client_message}")
 
 console_handle = ctypes.windll.kernel32.GetStdHandle(-10)
 ctypes.windll.kernel32.SetConsoleMode(console_handle, 0)
 
 def send(message):
 
-    print(f"\r{message}", end="")
+    print(f"\n\rClient: ", end="")
 
     # user input is put into utf-8
     message = message.encode(FORMAT)
@@ -60,10 +60,10 @@ def receive():
             receive_message = clientsocket.recv(message_len).decode(FORMAT)
             #print(f"payload received: {receive_message}.")
 
-            clear_message = " " * len(client_message)
+            clear_message = " " * len("Client: " + client_message)
             print(f"\r{str(clear_message)}", end="")
             print(f"\r{receive_message}", end ="")
-            print(f"\r{client_message}", end ="")
+            print(f"\rClient: {client_message}", end ="")
             #print(f"\r{receive_message}\nEnter message: ", end="")
 
 
@@ -81,23 +81,22 @@ def start():
 
         # new line
         if (new_char == b'\r'):
-            client_message.replace("Client: ", "Me")
-            print(f"\r{client_message}", end="")
+            print(f"\rClient: {client_message}", end="")
             thread_tx = threading.Thread(target=send, args=(client_message + "\n",))
             thread_tx.start()
-            client_message = str("Client: ")
+            client_message = str("")
         # backspaces remove characters
         elif (new_char == b'\x08'):
-            if (client_message != "Client: "):
+            if (client_message != ""):
                 client_message = client_message[:-1]
-                print(f"\r{client_message}" + " ", end="")
+                print(f"\rClient: {client_message}" + " ", end="")
             else:
-                print(f"\r{client_message}", end="")
+                print(f"\rClient: {client_message}", end="")
         # hopefully alphanumeric
         else:
             client_message = client_message + new_char.decode()
 
-        print(f"\r{client_message}", end="")
+        print(f"\rClient: {client_message}", end="")
 
 # main
 print(f" --- ({THISHOST}) CLIENT BEGAN --- \n")

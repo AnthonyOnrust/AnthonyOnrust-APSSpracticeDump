@@ -24,6 +24,8 @@ serversocket.bind(ADDR1)
 server_message = str("Server: ")
 print(server_message)
 
+connection_list = []
+
 console_handle = ctypes.windll.kernel32.GetStdHandle(-10)
 ctypes.windll.kernel32.SetConsoleMode(console_handle, 0)
 
@@ -32,8 +34,6 @@ ctypes.windll.kernel32.SetConsoleMode(console_handle, 0)
 
 
 def send(connection, message):
-
-    print(f"\r{message}", end="")
 
     # user input is put into utf-8
     message = message.encode(FORMAT)
@@ -57,8 +57,7 @@ def send(connection, message):
 
 
 # for each thread instance this code runs, thus clients do not hold up eachother
-def receive(connection, address):
-    print(f"@ ({address}) CONNECTION FOUND! \n")
+def receive(connection, client_count):
 
     while True:
 
@@ -75,25 +74,16 @@ def receive(connection, address):
 
             clear_message = " " * len(server_message)
             print(f"\r{str(clear_message)}", end="")
-            print(f"\r{receive_message}", end="")
+            print(f"\rClient{client_count}: {receive_message}", end="")
             print(f"\r{server_message}", end ="")
 
             # this session is open forever
 
-def start():
+def handle_client(connection, address, client_count):
     global server_message
-    serversocket.listen() #ready for connection
-    while True:
-
-        # wait for connection to provide us socket object and its address
-        print("listening... Only type in alphanumeric:")
-
-        connection, address = serversocket.accept() 
-
-        break
-
+    global connection_list
     # thread object made to run to receive
-    thread_rx = threading.Thread(target=receive, args=(connection, address))
+    thread_rx = threading.Thread(target=receive, args=(connection, client_count))
     thread_rx.start()
 
     while True:
@@ -101,10 +91,12 @@ def start():
 
         # new line
         if (new_char == b'\r'):
-            server_message.replace("Server: ", "Me")
             print(f"\r{server_message}", end="")
-            thread_tx = threading.Thread(target=send, args=(connection, server_message + "\n"))
-            thread_tx.start()
+            for connection_element in connection_list:
+
+                thread_tx = threading.Thread(target=send, args=(connection_element, server_message + "\n"))
+                thread_tx.start()
+            print(f"\r{server_message}\n", end="")
             server_message = str("Server: ")
         # backspaces remove characters
         elif (new_char == b'\x08'):
@@ -118,6 +110,25 @@ def start():
             server_message = server_message + new_char.decode()
 
         print(f"\r{server_message}", end="")
+
+
+def start():
+    serversocket.listen() #ready for connection
+    print("listening...")
+    client_count = 0
+
+    while True:
+
+        # wait for connection to provide us socket object and its address
+        connection, address = serversocket.accept() 
+        client_count += 1
+        connection_list.append(connection)
+
+        clear_message = " " * len(server_message)
+        print(f"\r{str(clear_message)}", end="")
+        print(f"\r@({address}) connected, going by alias: client{client_count}")
+        thread_rx = threading.Thread(target=handle_client, args=(connection, address, client_count))
+        thread_rx.start()
 
 
 # main
