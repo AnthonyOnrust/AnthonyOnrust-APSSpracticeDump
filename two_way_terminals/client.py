@@ -2,13 +2,14 @@ import socket
 import threading
 import time
 
+import msvcrt
+import ctypes
+
 HEADER = 64
 FORMAT = 'utf-8'
 PORT1 = 5052
 THISHOST = socket.gethostbyname(socket.gethostname()) #this device ip
 ADDR1 = (THISHOST, PORT1)
-
-MESSAGE = "\nHello \nThis is client speaking \nOver \n"
 
 # AF_INET is for IPv4 address family.
 # SOCK_STREAM is for TCP connection.
@@ -17,7 +18,15 @@ clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # assigns socket location with local ip address and selected port
 clientsocket.connect(ADDR1)
 
+client_message = str("Client: ")
+print(client_message)
+
+console_handle = ctypes.windll.kernel32.GetStdHandle(-10)
+ctypes.windll.kernel32.SetConsoleMode(console_handle, 0)
+
 def send(message):
+
+    print(f"\r{message}", end="")
 
     # user input is put into utf-8
     message = message.encode(FORMAT)
@@ -56,6 +65,7 @@ def receive():
 
 
 def start():
+    global client_message
     # handle sending separate from receiving since if they are run as same thread the receive script will
     # hold up the send script.
 
@@ -64,9 +74,27 @@ def start():
     thread_rx.start()
 
     while True:
-        msg = input("Enter message: ")
+        new_char = msvcrt.getch()
 
-        thread_tx = threading.Thread(target=send, args=("Received: " + msg,))
+        # new line
+        if (new_char == b'\r'):
+            client_message.replace("Client: ", "Me")
+            print(f"\r{client_message}", end="")
+            thread_tx = threading.Thread(target=send, args=("\n",))
+            thread_tx.start()
+            client_message = str("Client: ")
+        # backspaces remove characters
+        elif (new_char == b'\x08'):
+            if (client_message != "Client: "):
+                client_message = client_message[:-1]
+                print(f"\r{client_message}" + " ", end="")
+            else:
+                print(f"\r{client_message}", end="")
+        # hopefully alphanumeric
+        else:
+            client_message = client_message + new_char.decode()
+
+        thread_tx = threading.Thread(target=send, args=(client_message,))
         thread_tx.start()
 
 

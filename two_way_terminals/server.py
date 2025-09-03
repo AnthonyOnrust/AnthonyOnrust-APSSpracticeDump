@@ -1,6 +1,5 @@
 import socket
 import threading
-from pynput import keyboard
 import time
 
 import msvcrt
@@ -22,7 +21,7 @@ serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # assigns socket location with any local ip address
 serversocket.bind(ADDR1)
 
-server_message = str("Type here: ")
+server_message = str("Server: ")
 print(server_message)
 
 console_handle = ctypes.windll.kernel32.GetStdHandle(-10)
@@ -66,7 +65,6 @@ def receive(connection, address):
         # as we need to know defined no. of bytes for message we use header to provide
         # that info first.
         message_len = connection.recv(HEADER).decode(FORMAT)
-        print(f"message length: {message_len}.")
 
         # ensure header is legit before taking paylaod
         if message_len:
@@ -75,7 +73,7 @@ def receive(connection, address):
             # using now known payload length from header take in message content
             receive_message = connection.recv(message_len).decode(FORMAT)
 
-            print(f"\r{receive_message}\nEnter message: ", end="")
+            print(f"\r{receive_message}", end="")
 
             # this session is open forever
 
@@ -97,20 +95,22 @@ def start():
 
     while True:
         new_char = msvcrt.getch()
+
+        # new line
         if (new_char == b'\r'):
-            server_message.replace("Type here", "Me")
+            server_message.replace("Server: ", "Me")
             print(f"\r{server_message}", end="")
-            print(f"\n")
-            server_message = str("Type here: ")
+            thread_tx = threading.Thread(target=send, args=(connection, "\n"))
+            thread_tx.start()
+            server_message = str("Server: ")
         # backspaces remove characters
         elif (new_char == b'\x08'):
-            if (server_message != "Type here: "):
+            if (server_message != "Server: "):
                 server_message = server_message[:-1]
                 print(f"\r{server_message}" + " ", end="")
             else:
                 print(f"\r{server_message}", end="")
-        
-
+        # hopefully alphanumeric
         else:
             server_message = server_message + new_char.decode()
 
